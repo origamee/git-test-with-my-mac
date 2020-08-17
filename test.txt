@@ -1,0 +1,29 @@
+##since the first item is a list #####
+    #phantom.debug(type(filtered_artifacts_item_1_0[0]))
+
+    msg = email.message_from_string(filtered_artifacts_item_1_0[0])
+    ####making sure everything is setup for utf-8######
+    phantom.debug(sys.getdefaultencoding())
+    # you will see that the encoding of the terminal is set to ASCII, so we have to convert all our stuff to utf-8 as PDFkit recignizes utf-8
+    for part in msg.walk():
+        if part.get_content_type():
+                #.split is to take the email part from the HTML out, and just output the HTML portion, which becomes the second item in the list
+                #body = str(part.get_payload()).split("phishingreport@onegas.com</a></u>.</span>")[1]
+                body = str(part.get_payload())
+                with io.open('/opt/phantom/vault/tmp/emltohtml.html', 'w+', encoding='utf8') as f:
+                    f.write(body.decode('utf-8'))
+
+    #read
+    f = io.open("/opt/phantom/vault/tmp/emltohtml.html", "r+", encoding='utf8')
+    sourceHtml = f.read()
+
+    outputFilename = "/opt/phantom/vault/tmp/test555.pdf"
+
+    pdfkit.from_string(sourceHtml, outputFilename, configuration=config)
+    #add the output file to the vault
+    success, message, vault_id = phantom.vault_add(file_location="/opt/phantom/vault/tmp/test555.pdf", file_name= "ScreenShot", metadata={"contains": ["PDF File"]})
+    phantom.debug('phantom.vault_add results: success: {}, message: {}, vault_id:{}'.format(success, message, vault_id))
+
+    #get the link from vault_info
+    success, message, info = phantom.vault_info(vault_id=vault_id, container_id=container['id']) #The info variable returns a list with a dictionary
+    phantom.debug(info[0]['path'])
